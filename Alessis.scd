@@ -8,9 +8,14 @@ MIDIIn.connectAll;
 
 //GUI
 var s1, s2;
+//left and top are for plotting the pads
 var left = 0; var top = 0; var alessis;
+//piano temporary variables for adding keys
+var pianotemp = 0; var pianotemp2 = 0;
+//musical dictionary
 var dict;
 //////////////////////////////////////
+//tons of arrays for gui elements!! whopee
 var barr;
 var keyarr;
 var key2arr;
@@ -18,6 +23,7 @@ var knobarr;
 var adgBArr;
 var bindArr;
 var playArr;
+var pianoArr;
 var boolLoop = false;
 //keynums is for the physical keyboard keys
 var keyNums = Array.newClear(74-48);
@@ -216,7 +222,7 @@ barr = Array.fill(16, {arg i;
 		if (i+1%4 == 1, {left = 0}, {left = left + 150});
 	//left.postln;
 	//top.postln;
-	Button(w, Rect(30+left,375+top,125,125)).states =
+	Button(w, Rect(30+left,1125-top,125,125)).states =
 	[["released", Color.white, Color.grey],
 		["low", Color.white, Color.blue],
 		["medium", Color.white, Color.yellow],
@@ -225,17 +231,25 @@ left = 0;
 
 barr.postln;
 //////////////////////////////////////////////////////
+//keyarr fills the white keys
 keyarr = Array.fill(15, {arg i;
-	Button(w, Rect(630+ left, 525, 114, 625));
-	left = left+114;});
+	left = left+114;
+	Button(w, Rect(630 - 114 + left, 525, 114, 625)).states =
+	[["", Color.grey, Color.grey],
+		["", Color.white, Color.white]];});
 left = 57;
+//key2arr fills the black keys on the gui
 key2arr = Array.fill(10, {arg i;
-	Button(w, Rect(660+left, 525, 57, 400));
+
 	if (i == 1, {left = left + 114});
 	if (i == 4, {left = left + 114});
 	if (i == 6, {left = left + 114});
 	left = left + 114;
-});
+	Button(w, Rect(660-114+left, 525, 57, 400)).states =
+	[["", Color.grey, Color.grey],
+		["", Color.black, Color.black]];});
+/////////////////////////////////////////////////////
+//time for pianoArr combines keyarr and key2Arr
 
 left = 0;
 knobarr = Array.fill(8, {arg i;
@@ -280,7 +294,9 @@ MIDIFunc.trace( false );
 					{AppClock.sched(0, {barr[num-36].valueAction = 3})})})})});
 ~padOff = MIDIFunc.noteOff({arg veloc, num, chan, src;
 	if (num < 52,
-		{playArr[num-36+~padOffset].stop})});
+		{playArr[num-36+~padOffset].stop;
+			AppClock.sched(0, {barr[num-36].valueAction = 0})
+})});
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 ~selector = ~instrumentArray[0];
@@ -303,19 +319,32 @@ MIDIdef.cc(\poff4, {~padOffset = ~padOffset - 16}, 67, 0);
 MIDIdef.cc(\octaveUp, {~offset=~offset + 12}, 117, 0);
 MIDIdef.cc(\octaveDown, {~offset = ~offset - 12}, 116, 0);
 
+keyarr.postln;
+key2arr.postln;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////
 ~on = MIDIFunc.noteOn({ |veloc, num, chan, src|
 	if (num > 51,
-		{keyNums[num-48] = Synth(~selector, [\freq, (num+~offset).midicps])});
+		{keyNums[num-48] = Synth(~selector, [\freq, (num+~offset).midicps]);
+			if ([2,4,6,9,11,14,16,18].contains(num - 48 % 20),
+				{AppClock.sched(0, {key2arr[num - 48 % 20].valueAction = 1})},
+				{AppClock.sched(0, {keyarr[num - 48 % 20].valueAction = 1})}
+			)
+	});
 	MIDIdef.cc( \roll , { arg val; keyNums[num-48].set( \freq, (num+~offset+val).midicps ) }, 1, 0 );
 	MIDIdef.cc( \knob1 , { arg val; keyNums[num-48].set( \amp, val/127 ) }, 20, 0 );
 });
 
 ~off = MIDIFunc.noteOff({ |veloc, num, chan, src|
 	if (num > 51,
-		{keyNums[num-48].release})
+		{keyNums[num-48].release;
+			if ([2,4,6,9,11,14,16,18].contains(num - 48 % 20),
+				{AppClock.sched(0, {key2arr[num - 48 % 20].valueAction = 0})},
+				{AppClock.sched(0, {keyarr[num - 48 % 20].valueAction = 0})}
+			);
+
+		})
 });
 
 

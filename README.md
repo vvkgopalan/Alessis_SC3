@@ -1,2 +1,2 @@
-# Alessis_SC3
-Back-end mapping of keys on a Alessis V125 in SuperCollider. 
+# Alesis SC3 Mapping 
+Back-end mapping of keys on a Alesis V125 in SuperCollider. 
